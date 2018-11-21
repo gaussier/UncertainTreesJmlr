@@ -1,0 +1,112 @@
+\section{Theoretical Analysis}
+\label{sec:th}
+
+\subsection{Uncertain vs standard trees}
+
+
+
+
+\subsection{A sufficient condition on the invertibility of $P^T P$}
+ 
+The formula used for the construction of the tree relies on the inverse on the matrix $P^T P\in M_{K,K}(\mathbb{R})$. Even if numerically the Moore-Penrose pseudo-inverse might be used to approximate this inverse, we provide here a sufficient condition on the invertibility of $P$. Without loss of generality, the regions involved in the definition of the regression tree are of the form $R_k =\prod_{j=1}^p [a_k^j,b_k^j]$ for $1\leq k \leq K$, where $(a_k^j, b_k^j) \in (-\infty, +\infty)^2$. As usual, we denote $q_\alpha$ the $\alpha$ quantile of the standard Gaussian distribution. The general invertibility result is stated in Theorem~\ref{th:gen}.
+%
+\begin{theorem}\label{th:gen}
+With the model defined in \eqref{model}, if the following assumption is satisfied:
+     \[
+     \forall j, \, 1\leq j \leq p, \,
+     \sigma_{U_j} < \frac{\min\limits_{1\leq k\leq K}(b_k^j-a_k^j)}{2 q_{\frac{1+0.5^{\frac{1}{p}}}{2}}},
+     \]
+then the matrix $P^TP$ is invertible.
+\end{theorem}
+%
+Roughly speaking, the matrix $P^T P$ is invertible provided that the standard deviation $\sigma_{U_j}$ is sufficiently small for all $1\leq j \leq p$. The smaller the regions and/or the larger the number $p$ of input variables, the lower the uncertainty on the measurement has to be to ensure the invertibility of the matrix $P^T P$.
+
+To prove Theorem~\ref{th:gen}, we prove that $P$ is of full rank. To do so, we first prove the following result:
+
+\begin{proposition}
+\label{prop}
+Let us fix $1\leq k \leq K$ and consider $1\leq i \leq n$ such that $a_k^j<x_i^j<b_k^j$. Assume that 
+\begin{equation}\label{assSigma}
+    \forall 1\leq j \leq p,\, \sigma_{U_j}<\frac{b_k^j-a_k^j}{2q_{\frac{1+0.5^{1/p}}{2}}}.
+\end{equation}
+Then, $P_{i,k}>0.5$.
+\end{proposition}
+
+\begin{proof}
+Observe that a sufficient condition to have $P_{i,k}>0.5$ is
+\[
+\forall j,\, \frac{1}{\sigma_{U_j}\sqrt{2\pi}}\int_{R_k^j}e^{-\frac{(u-x_i^j)^2}{2\sigma_{U_j}^2}}du>0.5^{1/p}.
+\]
+We now search a sufficient condition to have the inequality just above. To get this inequality the following condition is sufficient: for all $1\leq j\leq p$,
+\begin{align}
+&\mathbb{P}\left(\frac{U_i^j-x_i^j}{\sigma_{U_j}}<\frac{b_k^j-x_i^j}{\sigma_{U_j}}|X_i=x_i\right) \nonumber\\
+&-\mathbb{P}\left(\frac{U_i^j-x_i^j}{\sigma_{U_j}}<\frac{a_k^j-x_i^j}{\sigma_{U_j}}|X_i=x_i\right)>0.5^{1/p}.\label{eq:diff-proba}
+\end{align}
+Note that this last condition is satisfied if we have, for all $1\leq j \leq p$,
+ \begin{equation*}
+    \left\{
+\begin{array}{l}
+   \mathbb{P}\left(\frac{U_i^j-x_i^j}{\sigma_{U_j}}<\frac{b_k^j-x_i^j}{\sigma_{U_j}}|X_i=x_i\right)>\frac{1+0.5^{1/p}}{2},\\
+   \mathbb{P}\left(\frac{U_i^j-x_i^j}{\sigma_{U_j}}<\frac{a_k^j-x_i^j}{\sigma_{U_j}}|X_i=x_i\right)<\frac{1-0.5^{1/p}}{2},
+\end{array}
+\right.
+\end{equation*}
+which is equivalent to
+\[
+\frac{a_k^j-x_i^j}{\sigma_{U_j}}<q_{\frac{1-0.5^{1/p}}{2}}\mbox{ and }\frac{b_k^j-x_i^j}{\sigma_{U_j}}>q_{\frac{1+0.5^{1/p}}{2}}.
+\]
+Note that $q_{\frac{1-0.5^{1/p}}{2}}=-q_{\frac{1+0.5^{1/p}}{2}}<0$. A sufficient condition is then, for all $1\leq j \leq p$,
+\[
+\sigma_{U_j}<\min_{1\leq k \leq K} \left\{  \frac{\min\left(x_i^j-a_k^j,b_k^j-x_i^j\right)}{q_{\frac{1+0.5^{1/p}}{2}}}\right\}.
+\]
+Since  $a_k^j<x_i^j<b_k^j$, a condition even more conservative is the following:
+\[
+\forall j,\, \sigma_{U_j}<\frac{b_k^j-a_k^j}{2q_{\frac{1+0.5^{1/p}}{2}}}.
+\]
+This concludes the proof.
+\hfill $\blacksquare$
+\end{proof}
+
+We assume in the following that Assumption \eqref{assSigma} is satisfied. Then, the set $I_k = \{1\leq i \leq n, P_{i,k} >0.5 \}$ is non-empty. Let us consider, for all $1\leq k\leq K$, $i_k$ a representative of this set and let us introduce the matrix $Q \in M_{K,K}(\mathbb{R})$ defined, for all $1\leq l,k \leq K$, by:
+%
+\[
+Q_{l,k} = P_{i_l,k}.
+\]
+%
+
+\begin{proposition}
+Assume that Assumption \eqref{assSigma} holds. Then the $K\times K$ matrix $Q$ is invertible.
+\end{proposition}
+\begin{proof}
+We first show that $Q$ is a strictly dominant diagonal matrix, \textit{i.e.}:
+%
+\[
+\forall k,\,Q_{kk}>\sum_{k'\neq k}Q_{kk'}.
+\]
+%
+Indeed, by  Proposition \ref{prop}, we know that $P_{i_k,k}>0.5$ and $k$ is the only region where it is true:
+\[
+\sum_{l\neq k}Q_{l,k}\leq \sum_{l\neq k}P_{i_l,k} = 1 - P_{i_k,k} <0.5<P_{i_k,k}=Q_{k,k}.
+\]
+%
+According to Hadamard's Lemma, we know that a strictly dominant diagonal matrix is invertible, which concludes the proof.
+\hfill $\blacksquare$
+\end{proof}
+%
+As $Q$ is invertible, $P$ is of full rank, leading to the fact that $P^T P$ is invertible which concludes the proof of Theorem \ref{th:gen}.
+
+\subsection{Consistency analysis}
+
+\section{Extension to Random Forests}
+\label{sec:RF}
+
+It is straightforward to use the uncertain regression trees introduced above in Random Forests, leading to \textit{Uncertain Random Forests}. Indeed, each tree of the forest is now an uncertain regression tree that can be constructed as outlined before. Assuming a forest of $\tau$ uncertain trees and denoting $\hat{\boldsymbol{\gamma}}^t, \, 1 \le t \le \tau$, the weights estimated for each tree and $P^{\boldsymbol{x},t}_{k_t}$ the probability distribution of a new observation $\boldsymbol{x}\in \mathbb{R}^p$ over the $K_t$ regions ($1 \le k_t \le K_t$) of the $t^{\text{th}}$ tree ($1 \le t \le \tau$) of the forest, the prediction rule of the uncertain random forest takes the form:
+%
+\begin{align}
+    RF_{\text{un}}\left(\boldsymbol{x}; \hat{\Theta}_{t, \, 1 \le t \le \tau}\right) = \frac{1}{\tau} \sum_{t=1}^{\tau} \sum_{k_t=1}^{K_t} \hat{\gamma}^t_{k_t} P^{\boldsymbol{x},t}_{k_t}.
+  \label{pred:unrf}
+\end{align}
+%
+As one can note, the above prediction rule is a direct extension of Eq. \eqref{pred:untree}.
+
+

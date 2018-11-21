@@ -1,0 +1,104 @@
+\section{Experimental validation}
+\label{sec:exps}
+
+
+The goal of our experiments is to assess how uncertain regression trees:
+%
+\begin{itemize}
+    \item compare to standard regression trees,
+    \item behave in \textit{Uncertain} Random Forests.
+\end{itemize}
+%
+By standard regression trees we mean here regression trees based on the quadratic risk and the prediction rule given in Eq. \eqref{treeClassical}. In addition, we consider a trade-off between standard and uncertain regression trees based on standard trees (and thus avoiding the complex construction process outlined before) but using the prediction rule given in \eqref{pred:untree}. The matrix $P$ and the weights $\boldsymbol{\gamma}$ are thus computed only once, when the standard trees have been built. The rationale for this method is to rely on the strengths of the two approaches: a simple construction tree process and a robust prediction rule. As one can conjecture, this method yields results in between the two approaches.
+
+We make use in our experiments of four benchmark data sets commonly used in regression tasks and described in Section~\ref{sec:data}. We first use these data sets without any modification, to illustrate the fact that \textit{real} data sets contain uncertain inputs. The uncertain regression trees proposed here indeed outperform standard trees and Random Forests on these data sets, as shown in Section~\ref{sec:bench}. We then modify these data sets by adding a uniform noise bounded by a quantity proportional to the empirical variance of the data. This additional perturbation aims at assessing the robustness of the different methods (standard and uncertain trees) in situations where the input data is highly uncertain. Once again, the results obtained show the good behavior of the uncertain trees and Random Forests (Section~\ref{sec:arti}). In all our experiments, the results are evaluated with the Root Mean Squared Errors (RMSE), which is a standard evaluation measure in regressions tasks. To ensure that all the available data is used for both training and testing, we further rely on 5-fold cross-validation and report the mean RMSE and its standard deviation over the 5 folds.
+
+The stopping criterion for the trees, both standard and uncertain, is based on the fact that all leaves should contain at least ten percent of the training data. For Random Forests, three features are randomly selected for constructing a tree, which roughly corresponds to one third of the features on the data sets considered, a standard proportion in Random Forests.
+
+In this study, the vector of variances is fixed according to some high level principle. In particular, when no additional noise is introduced on the data, the variance for a particular variable $U^j|X^j$ is set to the empirical variance of $X^j$ (in other words, we assume that the variance of the \textit{true} values is of the same order as the variance of the observed values). When some noise is added to the data, the variance of $U^j|X^j$ is set to one half of the variance of the observed, noisy data (in this case, the variance of the true values should be lower than the empirical variance of the observed values; we arbitrarily chose one half in this study).
+
+Lastly, our algorithms have been implemented from \texttt{scikit-learn} \cite{Scikit-learn}, using Cython \cite{Behnel}.
+
+\subsection{Data Sets} 
+\label{sec:data}
+Experiments are conducted on 4 publicly available data sets, popular in the regression tree literature.  The main characteristics of these data sets are summarized in Table~\ref{tab:data set-description}.
+As we focus in this paper on quantitative variables, we simply deleted the categorical variables from the data sets.
+Several applications are considered, among which environment (concentration in ozone over a day for the data set \textit{Ozone} introduced in \cite{cornillon}), health (data set \textit{Diabete}, introduced in \cite{Scikit-learn} and used in \cite{LAR}), economy (data set \textit{BigMac} about price of sandwiches, available in R package \verb?alr3?  and used in \cite{meinshausen2006quantile}) or biology (data set \textit{Abalone} introduced in \cite{Warwick} and used in \cite{meinshausen2006quantile} among others).
+
+\begin{table}[ht!]
+  \centering
+      \begin{tabular}{ccc}
+        \hline
+        Data set & sample size $n$ & number of variables $p$ \\
+        \hline
+        BigMac & 69&9 \\
+        Ozone & 112 & 9 \\
+        Diabete & 442 & 10 \\
+        Abalone & 500 & 7\\
+        \hline
+      \end{tabular}
+\caption{Characteristics of data sets used in our experiments, ordered by sample size $n$.}
+\label{tab:data set-description}
+\end{table}
+    
+\subsection{Results on benchmark data sets}
+\label{sec:bench}
+As mentioned in the introduction, data sets are by nature uncertain, so we illustrate our method on the four data sets introduced in Section \ref{sec:data}. 
+The noise reflects the uncertainty, so we propose to use the empirical standard deviation vector as the input parameter $\boldsymbol{\sigma}_U$. Table~\ref{tab:data set-RMSE - trees} displays the results obtained for each data set in terms of mean and standard deviation of RMSE using 5-fold cross validation.
+Standard trees, standard Random Forests (with $\tau$ = 100 trees) as well as uncertain trees and standard trees with uncertain prediction are compared.
+
+\begin{table*}[ht!]
+  \centering
+      \begin{tabular}{ccccc}
+         Data sets & {BigMac}& {Ozone} & {Diabete}   & {Abalone}  \\
+        \hline
+        \hline
+         Standard tree  & 25.09 (12.3) & 17.82 (4.3) & 60.29 (4.3) & 2.70 (0.3) \\
+         Standard RF, $\tau = 100$ & 19.78 (11.0) & 15.86 (4.1) & 58.18 (4.3) & 2.65 (0.4) \\
+        Standard tree with uncertain prediction  & 21.49 (8.7) & 16.79 (4.1) & 57.05 (3.7)&  2.41 (0.2) \\
+        Uncertain tree & 18.74 (8.9) & 15.39 (3.7) & 56.56 (3.3) &  2.33 (0.3)  \\
+        \hline
+      \end{tabular}
+\caption{Average RMSE based on 5-fold cross-validation for the 4 benchmark data sets. Standard deviations are given in parentheses. For each  uncertain tree based method, $\boldsymbol{\sigma}_{U}$ are set to the empirical standard deviations of the observed input variables.}
+\label{tab:data set-RMSE - trees}
+\end{table*}
+
+For all data sets, the best performances are achieved by uncertain trees.
+As expected, the standard Random Forest are performing better than considering only one tree. However, as one can see in Table \ref{tab:data set-RMSE - trees}, uncertain trees yield better results than standard Random Forests. Performances of standard trees with uncertain prediction are better than the ones of standard trees, however not always better than the ones of standard Random Forests.
+
+Finally, one can note that the standard deviation of uncertain trees is smaller than the standard deviation of other methods, meaning that uncertain trees yield more stable results.
+
+\subsection{Results on artificial uncertain data sets}
+\label{sec:arti}
+To assess the robustness of uncertain trees to and uncertain Random Forests to uncertainty in the input variable, we add artificial noise, which could correspond to some measure error, to the input observations.
+By doing so, one can consider that the variability of the data is coming from two sources, on the one hand the variance in the latent variables (related to the variance of $\mathbf{U}$ with the notations of Section \ref{sec:model}) and on the other hand the variance of the uncertainty (related to the variance of $\mathbf{X} | \mathbf{U}$), both leading to the variance of the observations.
+Then, we assume here that $\boldsymbol{\sigma}_U$ is smaller than  the standard deviation of the observations $\boldsymbol{\sigma}_X$, which can be estimated through the data set. Basically it means that the main part of the variance is due to the uncertainty.
+
+To construct artificial uncertain data sets satisfying this condition, we consider in this section \textit{BigMac}, \textit{Ozone}, \textit{Diabete} and \textit{Abalone} data sets introduced in Section \ref{sec:data}.
+A noise is added to each observation using the following process. For each observation from an input variable $X^j$, $1\leq j \leq p$, we add a noise generated from the product of a Rademacher variable and a uniform variable coming from the interval $[\hat{\sigma}_{X_j}/10, \hat{\sigma}_{X_j}/4]$.
+
+We consider here standard trees, standard Random Forests with $\tau = 500$ trees, standard trees with uncertain prediction, uncertain trees and uncertain Random Forests with $\tau = 15$ trees. The results obtained are displayed in Table \ref{tab:data set-RMSE - RF}.
+
+\begin{table*}[ht!]
+  \centering
+      \begin{tabular}{ccccc}
+        Uncertain data sets  & {BigMac} &{Ozone} &{Diabete} &{Abalone} \\
+        \hline
+        \hline
+        Standard tree & 22.28 (8.7) & 19.37 (4.1) & 60.47 (2.81) & 2.54 (0.17)\\
+        Standard tree with uncertain prediction & 21.68 (9.8) & 17.35 (4.9) & 57.92 (3.43) & 2.40 (0.15)\\
+      Uncertain tree & 19.28 (13.4) & 16.87 (6.0) & 58.56 (3.45) & 2.34 (0.20)\\
+      \hline
+         Standard RF, $\tau = 500$ & 19.25 (7.8) & 15.72 (3.0) & 59.55 (4.39) & 2.64 (0.18) \\
+        Uncertain RF, $\tau = 15$ &18.06 (9.3)& 15.49 (3.7) & 55.66 (4.31) & 1.98 (0.12) \\
+        \hline
+      \end{tabular}
+\caption{Average RMSE based on 5-fold cross-validation for the 4 modified data sets. Standard deviations are given in parentheses. On each data set, each observation is modified by a noise generated from the product of a Rademacher variable and a uniform variable coming from the interval $[\frac{\hat{\sigma}_{X_j}}{10}, \frac{\hat{\sigma}_{X_j}}{4}]$. For each uncertain tree-based method, $\boldsymbol{\sigma}_U$ is to half of the empirical standard deviations of the observed (modified) input variables.}
+\label{tab:data set-RMSE - RF}
+
+\end{table*}
+
+As one can note, uncertain trees outperforms here again standard trees. RMSE scores are a bit higher than in Table \ref{tab:data set-RMSE - trees}, which is not surprising given the noise added to the data sets.
+
+Similarly, uncertain Random Forests outperform all the other methods, including standard Random Forests even though the number of trees is one order of magnitude less. 
+

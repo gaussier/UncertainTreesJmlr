@@ -1,0 +1,243 @@
+\section{Regression trees with uncertain input}
+\label{sec:model}
+
+Let $Y$ be an output random variable and $\boldsymbol{X} = (X^1,\cdots,X^p)$ a $p$-dimensional input random vector. A classical question is to find some relationship between $\boldsymbol{X}$ and $Y$, estimating the so called link function $f$ involved in the model $Y=f(\boldsymbol{X})+\epsilon$.
+
+Tree-based ensemble methods, as Random Forests or Gradient Boosted Trees, are popular machine learning methods, developed to address the above regression problem \cite{HastieTibshiraniFriedman}. In these methods, a set of regressors are constructed and aggregated in a convenient way. The building blocks are decision regression trees \cite{breiman1984classification}, which are defined from a partition of the space ${\cal X}$ of input variables into $K$ regions $(R_k)_{1\leq k \leq K}$ obtained by dyadic splits minimizing a risk function. A weight $\gamma_k$ is associated to each region leading to a piece-wise predictor, for a new input $\boldsymbol{x} \in \mathcal{X}$, of the form:
+%
+\begin{align}
+T\left(\boldsymbol{x}; \Theta\right) = \sum_{k=1}^K \gamma_k \mathds{1}_{\lbrace \boldsymbol{x} \in R_k \rbrace}
+\label{treeClassical}
+\end{align}
+%
+where $\Theta = (R_k, \gamma_k)_{1\leq k \leq K}$ is the set of parameters, learned from a training data set, defining the tree. Both categorical and quantitative inputs can in theory be considered. For the sake of simplicity, we however focus in this study on quantitative inputs, thus considering that ${\cal X} = \mathbb{R}^p$.
+
+To deal with uncertainty in the inputs, we introduce an auxiliary latent random vector $\boldsymbol{U}$ representing the true value of the data and consider the general regression function that relates $\boldsymbol{U}|\boldsymbol{X}$ to $Y$ through $Y=f\left(\boldsymbol{U}|\boldsymbol{X}\right)+\epsilon$. The standard regression model is obtained from this general model by considering that $U^j | X^j$ is a Dirac at $X^j=x^j$ (or equivalently is Gaussian with mean $x^j$ and variance $0$). We further assume here that the variables are independent of each other and that the true measure given the observation, on each variable, is Gaussian, leading to the following complete model:
+%
+\begin{equation}
+\left\{
+\begin{array}{l}
+Y=f\left(\boldsymbol{U}|\boldsymbol{X}\right)+\epsilon, \\
+U^j | X^j=x^j \sim {\cal N} \left(x^j, \sigma_{U_j}^2\right) \text{ for } 1\leq j \leq p.
+\end{array}
+\right.
+\label{model}
+\end{equation}
+%
+The Gaussian distribution is widespread, can be used to approximate several other distributions and is easy to manipulate, hence its use here. Other distributions can nevertheless be considered for the measurement error, but this is beyond the scope of this study. In the remainder, we will denote $\boldsymbol{\sigma}_{\boldsymbol{U}}^2 = ({\sigma}_{U_1}^2, \ldots, {\sigma}_{U_p}^2)$ the vector of variances of the Gaussian distributions. In practical situations, these variances may be given (for example when the data corresponds to measurements from machines for which the uncertainty is known) or may be directly learned from the data. 
+
+When one is dealing with uncertain inputs, and we want to stress again that this is the general situation, one can no longer assume that observations are hard assigned to regions. Instead, each observation has a probability of being associated to each region, leading to the following prediction rule that directly generalizes Eq.~\eqref{treeClassical}:
+%
+\begin{align}
+    T_{\text{un}}\left(\boldsymbol{x}; \Theta\right) = \sum_{k=1}^K \gamma_k \mathbb{P}( \boldsymbol{U}\in R_k | \boldsymbol{X} =  \boldsymbol{x}, \boldsymbol{\sigma}_{\boldsymbol{U}}^2).
+    \label{treeUncertainty}
+\end{align}
+%
+Note that the set of parameters $\Theta$ now includes the variances $\boldsymbol{\sigma}_{\boldsymbol{U}}^2$. In addition, because of the independence assumption at the basis of the model retained, one has, for $1\leq k\leq K$:
+%
+\begin{equation}
+\mathbb{P}(\boldsymbol{U}\in R_k | \boldsymbol{X} =  \boldsymbol{x}, \boldsymbol{\sigma}_{\boldsymbol{U}}^2) = \prod_{j=1}^{p} \mathbb{P}(U^j \in R_{k}^j| X^j = x^j,\sigma_{U_j}^2), \nonumber
+\end{equation}
+%
+where the interval $R_k^j$ corresponds to the region  $R_k$ projected onto the $j$th variable. We now turn to the procedure for learning the parameters of the model.
+
+\subsection{Estimation procedure}
+
+The estimation procedure of the parameters is based, in this study, on the minimization of the empirical quadratic risk, which is the standard risk considered in regression trees. More precisely, for the learning set defined by:
+%
+ \begin{align}
+    {\cal L}_n&=\left\{\left(x_i^1,\cdots,x_i^{p} , y_i\right)_{1\leq i \leq n}
+    \right\},
+\label{learning_set}
+\end{align}
+%
+with $(\boldsymbol{x}_i, y_i)_{1\leq i \leq n}$ the observed sample, we define the empirical risk:
+%
+\begin{align}
+    R_{emp}(T_{\text{un}}(.;\hat{\Theta}), {\cal L}_n) &= 
+    \frac{1}{n} \sum_{i=1}^n (y_i - T_{\text{un}}(\boldsymbol{x}_i;\hat{\Theta}))^2
+\label{empiricalRisk}
+\end{align}
+%
+where $T_{\text{un}}$ has been introduced in Eq.~\eqref{treeUncertainty}. This criterion has to be minimized on the training set wrt the parameters denoted by $\Theta~=~\left\{(R_k, \gamma_k)_{1\leq k \leq K},\boldsymbol{\sigma}_{\boldsymbol{U}}^2\right\} $: regions of the tree, associated weights, and the variances of  the vector $\boldsymbol{U|X}$. To do so, we introduce  the matrix $P \in M_{n,K} (\mathbb{R})$\footnote{$P$ depends on the number of regions considered. It is thus a dynamic matrix that evolves during the construction of the tree. For clarity sake, we do not explicit this dependence in our notation but the reader has to keep this in mind.} defined, for $1\leq i\leq n$ and for $1\leq k \leq K$, by:
+%
+\begin{eqnarray}\label{eq:def-P}
+P_{i,k} & = &\mathbb{P}\left(\boldsymbol{U}_i \in R_{k}| \boldsymbol{X}_i = \boldsymbol{x}_i ,\boldsymbol{\sigma}_{\boldsymbol{U}}^2\right) \nonumber \\
+ & = & \prod_{j=1}^{p} \mathbb{P}\left(U_i^j \in R_{k}^j| X^j_i = x^j_i,\sigma_{U_j}^2 \right). \nonumber
+\end{eqnarray}
+%
+
+
+\noindent \textbf{Estimating $\boldsymbol{\gamma}$ --} It is easy to see that when fixing the regions $(R_k)_{1\leq k \leq K}$ and the vector of variances $\boldsymbol{\sigma}_{\boldsymbol{U}}^2 $, minimizing Eq.~\eqref{empiricalRisk} with respect to $\boldsymbol{\gamma}$ corresponds to a weighted average of $y_1,\ldots, y_n$, in a way similar to the linear regression model if $P^T P$ is not singular:
+%
+\begin{align}
+    \label{notre_estimateur_gamma_k}
+       \hat{\boldsymbol{\gamma}} =& \underset{\boldsymbol{\gamma} \in \mathbb{R}^K}{\operatorname{argmin}} \left\{ R_{emp}(T_{\text{un}}(.;\hat{\Theta}), {\cal L}_n) \right\} \\
+       =& \left(P^T P\right)^{-1}  P^T  \boldsymbol{y},\nonumber  
+\end{align}
+%
+where $\boldsymbol{y}$ denotes the vector of $n$ univariate outputs $y_1,\ldots, y_n$.
+Indeed, by definition:
+%
+\begin{align*}
+    &R_{emp}(T_{\text{un}}(.;{\Theta}), {\cal L}_n)
+    = 
+    \frac{1}{n} \sum_{i=1}^n \left(y_i - \sum_{k=1}^K \gamma_k {P}_{i,k}\right)^2.
+\end{align*}
+%    
+Differentiating wrt $\gamma_k$, for all $1\leq k \leq K$, one gets:
+%
+\begin{align*}
+   &\frac{\partial}{\partial{\gamma}_{k}} R_{emp}\left( T_{\text{un}}(.;{\Theta}), {\cal L}_n\right) = 0 \\
+    &\Leftrightarrow
+   2 \sum_{i=1}^n \left[    
+    P_{i,k} \cdot \left( y_i -  \sum_{k'=1}^K  P_{i,k'}  {\gamma}_{k'} \right)\right] = 0\\
+   & \Leftrightarrow
+   \sum_{i=1}^n 
+        P_{i,k} \cdot   y_i
+       =   \sum_{i=1}^n   \sum_{k'=1}^K    P_{i,k}  P_{i,k'}  \boldsymbol{\gamma}_{k'}.
+\end{align*}
+%
+So that, if ${P}^T P$ is not singular:
+%
+\begin{align*}
+& P^T   \boldsymbol{y}
+       =  {P}^T   P\boldsymbol{\gamma} \, \Leftrightarrow \boldsymbol{\gamma} = \left(P^T P\right)^{-1}  P^T  \boldsymbol{y},
+\end{align*}
+which is a minimum. In Section \ref{sec:invert}, we derive assumptions under which ${P}^T P$ is indeed not singular. In practice, one can always use the pseudo-inverse of ${P}^T P$, which we will do in our experiments. Lastly, note that $\hat{\boldsymbol{\gamma}}$ depends on the regions through the matrix $P$. 
+
+\noindent \textbf{Estimating $(R_k)_{1 \le k \le K}$ --} The regions are constructed in a way similar to the construction process of standard trees with the difference that here, during the construction process of the regression tree, the number of regions $K$ is not fixed and increases step by step, which implies that the size of the matrix $P$ is also changing during the iterative process. Let us assume that $K$ regions have already been identified, meaning that the current tree has $K$ leaves, each leaf corresponding to a region (\textit{i.e.}, hyper-rectangle). 
+As in standard regression trees, each \textit{current}  region $R_k, \, 1 \le k \le K$, can be decomposed into two sub-regions wrt a variable $X^j$ and a splitting point $s_k^j$, for $1\leq j \leq p$:
+%
+\begin{equation*}
+\left\{
+\begin{array}{l}
+R^j_{k,L}=\{\boldsymbol{x}\in R_k|\, X^j<s_k^j \} \\
+R^j_{k,R}=\{\boldsymbol{x} \in R_k|\,X^j>s_k^j\}.
+\end{array}
+\right.
+\end{equation*}
+%
+This decomposition adds a new region  for which the associated elements, $P\in M_{n,K+1}(\mathbb{R})$ and  $\boldsymbol{\gamma} \in \mathbb{R}^{K+1}$ can readily be computed. $P$ has now $K+1$ regions corresponding to the current regions $R_{k'}$ (with $k' \ne k$) and the two new regions $R^j_{k,L}$ and $R^j_{k,R}$. For each current region $R_k$, one is looking for the best split, \textit{i.e.}, the best variable $X^j$ and the best splitting point $s^j_k$ that minimize:
+%
+\begin{align*}
+\sum_{i=1}^n \left(y_i - \sum_{l=1}^{K+1} \gamma_l {P}_{i,l}\right)^2.
+\end{align*}
+%
+The sum includes all possible observations as each observation has a non null probability to belong to any region. 
+Using Eq. \eqref{notre_estimateur_gamma_k}, the above problem can be reformulated, for each current region $R_k$, as:
+%
+\begin{align}
+\underset{1\leq j \leq p, s \in \mathcal{S}_k^j}{\operatorname{argmin}} \left\{  \sum_{i=1}^n \left(y_i - \sum_{l=1}^{K+1} \left(\left(P^T P\right)^{-1}  P^T  \boldsymbol{y}\right)_l {P}_{i,l}\right)^2 \right\},
+\label{min-split}\end{align}
+%
+where $\mathcal{S}_k^j$ denotes the set of splitting points corresponding to the middle points of the $j^{\text{th}}$ coordinates of the observations in $R_k$ sorted according to $X^j$.
+
+The decomposition corresponding to the best split is then used to build the child nodes of $R_k$, which is replaced, in the set of current regions, by its two children. In this process, that is repeated till a stopping criterion is met\footnote{Any standard stopping criterion can be used here.}, the number of regions, the matrix $P$ and the weights $\boldsymbol{\gamma}$ are gradually updated. Section~\ref{sec:algo} provides the algorithm corresponding to this construction.
+
+\noindent \textbf{Estimating $\boldsymbol{\sigma}_{\boldsymbol{U}}^2$ --} Lastly, the vector of variances, $\boldsymbol{\sigma}_{\boldsymbol{U}}^2$,
+can either be set according to some high level principles, or can be learned through a grid search on a validation set guaranteeing. The latter is more demanding wrt computational resources, but is likely to lead to better results. However, in our experiments, we use the former strategy, with the aim of showing that our approach is robust in the sense that it yields good results even when $\boldsymbol{\sigma_U}$ is set \textit{a priori}.
+
+
+\subsection{Final prediction}
+
+For a new observation $\boldsymbol{x}\in \mathbb{R}^p$, one first computes its distribution over all the obtained regions:
+%
+$$ \forall k, \, 1\leq k \leq K, \, P^{\boldsymbol{x}}_k = \mathbb{P}\left(\boldsymbol{U} \in {R}_{k}| \boldsymbol{X} = \boldsymbol{x}, {\boldsymbol{\sigma}}_{\boldsymbol{U}}^2 \right) .$$
+%
+The prediction is then a direct application of \eqref{treeUncertainty}:
+%
+\begin{align}
+    T_{\text{un}}\left(\boldsymbol{x}; \hat{\Theta}\right) = \sum_{k=1}^K \hat{\gamma}_k P^{\boldsymbol{x}}_k,
+  \label{pred:untree}
+\end{align}
+%
+where $\boldsymbol{\gamma}$, $(R_k)_{1 \le k \le K}$ and $\boldsymbol{\sigma}_{\boldsymbol{U}}^2$ are estimated as described above.
+%
+
+\section{Associated algorithms}
+\label{sec:algo}
+
+Algorithm \ref{algo:buid_tree} describes the construction of uncertain regression trees. This construction parallels the one of standard regression trees except that we consider a matrix $P$ encoding the probability distribution of training data points over regions, which is built dynamically (as the regions and the weights) by adding a new column when a given region is split into two sub-regions.
+
+Each time a region $R$, corresponding to a current leaf of the tree being constructed, is considered (through the pop function in Algorithm \ref{algo:buid_tree}), one identifies the best split $(j^\star, s^\star)$ that minimizes the empirical risk in Eq. \eqref{min-split} among all possible splitting points in $\mathcal{S}_j(R)$ of each variable $j$. The set $\mathcal{S}_j(R)$ is defined by $\mathcal{S}_j(R) = \{ (x_{i_{l+1}}^j+x_{i_{l}}^j)/2 \mid  {1\leq l \leq r-1}\}$, with $(\boldsymbol{x}_{i_1}, \ldots, \boldsymbol{x}_{i_r})$ corresponding to the $r$ observations of the learning set $\mathcal{L}_n$ belonging to the region $R$, sorted such that $x_{i_1}^j \leq x_{i_2}^j \leq \cdots \leq x_{i_r}^j$.
+
+The $k$-th column of $P$ corresponding to the current region is finally replaced by the probability distribution of the training data points over its \textit{left sub-region} (denoted $R_L$) and an additional column is added to $P$ for the \textit{right sub-region} (denoted $R_R$). The weights $\hat{\boldsymbol{\gamma}}$ are easily deduced from $P$ at each step through \eqref{notre_estimateur_gamma_k}.
+
+The algorithm finally outputs the set of regions $\mathcal{R}(S)$ corresponding to the leaves of the tree and the weights $\hat{\boldsymbol{\gamma}}$.
+
+\begin{algorithm}
+{\textit{Uncertain regression trees}}
+
+    \noindent \textbf{Input:}     ${\cal L}_n$ 
+    
+    \noindent\textbf{Initialization:} $K=1, \, S \leftarrow (1,\mathcal{X}), \, P = \mathbf{1}_n$
+    
+    \noindent\textbf{while} stopping criterion not met
+    
+            $(k, R) = S.\text{pop}()$
+            
+            \textbf{for} $j = 1 \text{ to } p$
+            
+            \hspace{\parindent} Construct $\mathcal{S}_j(R)$ 
+            
+            \hspace{\parindent} \textbf{for} $ s \in \mathcal{S}_j(R)$
+            
+            \hspace{\parindent} \hspace{\parindent} $R_L = \{\boldsymbol{x} \in R, x_j \leq s\}$
+            
+            \hspace{\parindent} \hspace{\parindent} $R_R = \{\boldsymbol{x} \in R, x_j \geq s\}$
+            
+            \hspace{\parindent} \hspace{\parindent} $Q_L = (\mathbb{P}(U_i \in R_L|X_i = x_i))_{1\leq i \leq n}$ 
+              
+            \hspace{\parindent} \hspace{\parindent} $Q_R = (\mathbb{P}(U_i \in R_R|X_i = x_i))_{1\leq i \leq n}$
+            
+            \hspace{\parindent} \hspace{\parindent}$P^{[j,s]} \leftarrow$ Merge $\{ P[, 1:k-1], Q_L, $
+            
+             \hspace{\parindent} \hspace{\parindent}\hspace{\parindent} \hspace{\parindent} \hspace{\parindent} \hspace{\parindent} $P[, k+1:K], Q_R \} $
+            
+             \hspace{\parindent} \textbf{end for}
+            
+             \textbf{end for}
+            
+            $(j^\star, s^\star)=\underset{1\leq j \leq p, s \in \mathcal{S}_j(R)}{\operatorname{argmin}} \text{risk}(P^{[j,s]})$ \#defined in \eqref{min-split}
+            
+            $P = P^{[j^\star, s^\star]}$
+        
+            Update $\hat{\boldsymbol{\gamma}}$ acc. to Eq.~\ref{notre_estimateur_gamma_k}
+            
+            K = K+1
+            
+            S.append((k,$R_L$), (K, $R_R$))
+            
+            \noindent{\textbf{end while}}
+            
+            
+    \noindent \textbf{Output:} $(\mathcal{R}(S),\hat{\boldsymbol{\gamma}})$
+    \label{algo:buid_tree}
+
+\end{algorithm}
+
+Note that in this version the tree is constructed in a depth-first manner, and that the usual stopping criteria for regression trees can be used (as imposing a minimum number of observations in each leaf or a maximal depth for the tree).
+
+Algorithm \ref{algo:predict} provides the pseudo-code for the prediction rule given in  \eqref{pred:untree} for a new covariate $\boldsymbol{x}^\text{pred}$. 
+
+\begin{algorithm}{\textit{Prediction}}
+
+    \noindent \textbf{Input:}  $(R_{k})_{1 \le k \le K}, \, \hat{\boldsymbol{\gamma}}, \, \boldsymbol{x}^{\text{pred}}, \, {\boldsymbol{\sigma}}_U^2 $
+    
+
+    
+    \noindent $\hat{y}^{\text{pred}} = 0 $
+    
+    \noindent \textbf{for} $k=1$ to $K$  
+    
+    $\hat{y}^{\text{pred}} +=  \mathbb{P}(\mathbf{U} \in R_k | \mathbf{X} = \boldsymbol{x}^{\text{pred}}, {\boldsymbol{\sigma}}_U^2) \hat{\gamma}_k$
+    
+
+    
+ \noindent \textbf{end for}
+            
+    \noindent \textbf{Output:} $\hat{y}^{\text{pred}}$ 
+    \label{algo:predict}
+
+\end{algorithm}
